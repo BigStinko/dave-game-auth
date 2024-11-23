@@ -3,35 +3,20 @@ package main
 import (
 	"log"
 	"net/http"
-)
-
-const (
-	LOCALADDR =   "127.0.0.1"
-	DEFAULTPORT = "54321"
+	"time"
 )
 
 func main() {
-	address, port := getAddressAndPort()
-
 	mux := http.NewServeMux()
-
-	mux.HandleFunc("GET /healthz", getReadinessHandler)
-	mux.HandleFunc("GET /err", getErrHandler)
-
-	//tlsConfig, err := getTLSConfig()
-	//if err != nil { panic(err) }
-
-	server := &http.Server{
-		Addr: address + ":" + port,
+	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte("OK"))
+	})
+	httpServer := &http.Server{
+		Addr: ":8000",
 		Handler: mux,
+		ReadTimeout: 10 * time.Second,
+		WriteTimeout: 10 * time.Second,
 	}
-
-	log.Printf("Serving on port: %s\n", port)
-	log.Fatal(server.ListenAndServe())
+	log.Fatal(httpServer.ListenAndServe())
 }
-
-// For now just gives localhost
-func getAddressAndPort() (address, port string) {
-	return LOCALADDR, DEFAULTPORT
-}
-
