@@ -6,14 +6,15 @@ package db
 
 import (
 	"context"
-	"database/sql"
+
+	"github.com/google/uuid"
 )
 
 type Querier interface {
 	CreateUser(ctx context.Context, arg CreateUserParams) (User, error)
 	GetUserByUsername(ctx context.Context, username string) (User, error)
-	GetUserMatches(ctx context.Context, winnerID sql.NullInt32) ([]GetUserMatchesRow, error)
-	GetUserStats(ctx context.Context, winnerID sql.NullInt32) (GetUserStatsRow, error)
+	GetUserMatches(ctx context.Context, winnerID uuid.UUID) ([]GetUserMatchesRow, error)
+	GetUserStats(ctx context.Context, winnerID uuid.UUID) (GetUserStatsRow, error)
 }
 
 var _ Querier = (*Queries)(nil)

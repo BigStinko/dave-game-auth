@@ -7,7 +7,9 @@ package db
 
 import (
 	"context"
-	"database/sql"
+	"time"
+
+	"github.com/google/uuid"
 )
 
 const createUser = `-- name: CreateUser :one
@@ -18,7 +20,7 @@ RETURNING id, username, password_hash, created_at, updated_at
 
 type CreateUserParams struct {
 	Username     string `json:"username"`
-	PasswordHash string `json:"passwordHash"`
+	PasswordHash string `json:"password_hash"`
 }
 
 func (q *Queries) CreateUser(ctx context.Context, arg CreateUserParams) (User, error) {
@@ -54,14 +56,15 @@ func (q *Queries) GetUserByUsername(ctx context.Context, username string) (User,
 
 const getUserMatches = `-- name: GetUserMatches :many
 SELECT
-	m.id, m.player_x_id, m.player_y_id, m.winner_id, m.played_at,
+	m.id,
 	px.username as player_x_username,
 	py.username as player_y_username,
 	w.username as winner_username,
 	CASE
 		WHEN m.winner_id = $1 THEN true
 		ELSE false
-	END as won
+	END as won,
+	m.played_at
 FROM matches m
 JOIN users px ON m.player_x_id = px.id
 JOIN users py ON m.player_y_id = py.id
@@ -72,18 +75,15 @@ LIMIT 10
 `
 
 type GetUserMatchesRow struct {
-	ID              int32         `json:"id"`
-	PlayerXID       sql.NullInt32 `json:"playerXId"`
-	PlayerYID       sql.NullInt32 `json:"playerYId"`
-	WinnerID        sql.NullInt32 `json:"winnerId"`
-	PlayedAt        sql.NullTime  `json:"playedAt"`
-	PlayerXUsername string        `json:"playerXUsername"`
-	PlayerYUsername string        `json:"playerYUsername"`
-	WinnerUsername  string        `json:"winnerUsername"`
-	Won             bool          `json:"won"`
+	ID              uuid.UUID `json:"id"`
+	PlayerXUsername string    `json:"player_x_username"`
+	PlayerYUsername string    `json:"player_y_username"`
+	WinnerUsername  string    `json:"winner_username"`
+	Won             bool      `json:"won"`
+	PlayedAt        time.Time `json:"played_at"`
 }
 
-func (q *Queries) GetUserMatches(ctx context.Context, winnerID sql.NullInt32) ([]GetUserMatchesRow, error) {
+func (q *Queries) GetUserMatches(ctx context.Context, winnerID uuid.UUID) ([]GetUserMatchesRow, error) {
 	rows, err := q.db.QueryContext(ctx, getUserMatches, winnerID)
 	if err != nil {
 		return nil, err
@@ -94,14 +94,11 @@ func (q *Queries) GetUserMatches(ctx context.Context, winnerID sql.NullInt32) ([
 		var i GetUserMatchesRow
 		if err := rows.Scan(
 			&i.ID,
-			&i.PlayerXID,
-			&i.PlayerYID,
-			&i.WinnerID,
-			&i.PlayedAt,
 			&i.PlayerXUsername,
 			&i.PlayerYUsername,
 			&i.WinnerUsername,
 			&i.Won,
+			&i.PlayedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -126,12 +123,12 @@ WHERE player_x_id = $1 OR player_y_id = $1
 `
 
 type GetUserStatsRow struct {
-	TotalMatches int64 `json:"totalMatches"`
+	TotalMatches int64 `json:"total_matches"`
 	Wins         int64 `json:"wins"`
 	Losses       int64 `json:"losses"`
 }
 
-func (q *Queries) GetUserStats(ctx context.Context, winnerID sql.NullInt32) (GetUserStatsRow, error) {
+func (q *Queries) GetUserStats(ctx context.Context, winnerID uuid.UUID) (GetUserStatsRow, error) {
 	row := q.db.QueryRowContext(ctx, getUserStats, winnerID)
 	var i GetUserStatsRow
 	err := row.Scan(&i.TotalMatches, &i.Wins, &i.Losses)

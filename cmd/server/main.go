@@ -1,34 +1,31 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
-	"time"
+
+	"aidanwoods.dev/go-paseto"
+	"github.com/BigStinko/dave-game-auth/internal/auth"
+	"github.com/BigStinko/dave-game-auth/internal/db"
 )
 
 func main() {
-	mux := http.NewServeMux()
-	
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		log.Println("connection received")
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("OK"))
-	})
-
-	bind := os.Getenv("BIND_ADDRESS")
-
-	if bind == "" {
-		bind = "127.0.0.1"
+	dbURL := os.Getenv("DATABASE_URL")
+	if dbURL == "" {
+		log.Fatal("DATABASE_URL environment variable is required")
 	}
 
-	server := &http.Server{
-		Addr: fmt.Sprintf("%s:8000", bind),
-		Handler: mux,
-		ReadTimeout: 10 * time.Second,
-		WriteTimeout: 10 * time.Second,
+	dbConn, err := sql.Open("postgres", dbURL)
+	if err != nil {
+		log.Fatal(err)
 	}
-	
-	log.Fatal(server.ListenAndServe())
+
+	defer dbConn.Close()
+	queries := db.New(dbConn)
+	key := paseto.NewV4SymmetricKey() // in production load from environment
+	server := auth.NewServer(queries, key)
+
 }

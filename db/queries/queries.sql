@@ -9,14 +9,15 @@ WHERE username = $1;
 
 -- name: GetUserMatches :many
 SELECT
-	m.*,
+	m.id,
 	px.username as player_x_username,
 	py.username as player_y_username,
 	w.username as winner_username,
 	CASE
 		WHEN m.winner_id = $1 THEN true
 		ELSE false
-	END as won
+	END as won,
+	m.played_at
 FROM matches m
 JOIN users px ON m.player_x_id = px.id
 JOIN users py ON m.player_y_id = py.id

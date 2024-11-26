@@ -5,21 +5,23 @@
 package db
 
 import (
-	"database/sql"
+	"time"
+
+	"github.com/google/uuid"
 )
 
 type Match struct {
-	ID        int32         `json:"id"`
-	PlayerXID sql.NullInt32 `json:"playerXId"`
-	PlayerYID sql.NullInt32 `json:"playerYId"`
-	WinnerID  sql.NullInt32 `json:"winnerId"`
-	PlayedAt  sql.NullTime  `json:"playedAt"`
+	ID        uuid.UUID `json:"id"`
+	PlayerXID uuid.UUID `json:"player_x_id"`
+	PlayerYID uuid.UUID `json:"player_y_id"`
+	WinnerID  uuid.UUID `json:"winner_id"`
+	PlayedAt  time.Time `json:"played_at"`
 }
 
 type User struct {
-	ID           int32        `json:"id"`
-	Username     string       `json:"username"`
-	PasswordHash string       `json:"passwordHash"`
-	CreatedAt    sql.NullTime `json:"createdAt"`
-	UpdatedAt    sql.NullTime `json:"updatedAt"`
+	ID           uuid.UUID `json:"id"`
+	Username     string    `json:"username"`
+	PasswordHash string    `json:"password_hash"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
 }
